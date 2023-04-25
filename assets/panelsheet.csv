@@ -1,0 +1,4 @@
+ref_id,panel_id,file,file_index
+canFam3,DVDBC,/groups/dog/data/canFam3/variation/dogs.813.vars.flt.ann.vcf.gz,/groups/dog/data/canFam3/variation/dogs.813.vars.flt.ann.vcf.gz.csi
+canFam3,Jocelyn,/groups/dog/data/canFam3/variation/ostrander/722g.990.SNP.INDEL.chrAll.vcf.gz,/groups/dog/data/canFam3/variation/ostrander/722g.990.SNP.INDEL.chrAll.vcf.gz.tbi
+canFam3,648,/groups/dog/data/canFam3/variation/dogs.648.vars.flt.ann.vcf.gz,/groups/dog/data/canFam3/variation/dogs.648.vars.flt.ann.vcf.gz.tbi
