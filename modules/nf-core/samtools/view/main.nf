@@ -2,10 +2,10 @@ process SAMTOOLS_VIEW {
     tag "$meta.id"
     label 'process_low'
 
-    conda "bioconda::samtools=1.16.1"
+    conda "bioconda::samtools=1.17"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/samtools:1.16.1--h6899075_1' :
-        'quay.io/biocontainers/samtools:1.16.1--h6899075_1' }"
+        'https://depot.galaxyproject.org/singularity/samtools:1.17--h00cdaf9_0' :
+        'quay.io/biocontainers/samtools:1.17--h00cdaf9_0' }"
 
     input:
     tuple val(meta), path(input), path(index)
@@ -26,11 +26,12 @@ process SAMTOOLS_VIEW {
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def args2 = task.ext.args2 ?: ''
+    def args   = task.ext.args   ?: ''
+    def args2  = task.ext.args2  ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def reference = fasta ? "--reference ${fasta}" : ""
-    def readnames = qname ? "--qname-file ${qname}": ""
+    def reference  = fasta  ? "--reference ${fasta}" : ""
+    def readnames  = qname  ? "--qname-file ${qname}": ""
+    def region_cmd = region ? "-r ${region}"         : ""
     def file_type = args.contains("--output-fmt sam") ? "sam" :
                     args.contains("--output-fmt bam") ? "bam" :
                     args.contains("--output-fmt cram") ? "cram" :
@@ -43,7 +44,7 @@ process SAMTOOLS_VIEW {
         ${reference} \\
         ${readnames} \\
         $args \\
-        -r ${region} \\
+        ${region_cmd} \\
         -o ${prefix}.${file_type} \\
         $input \\
         $args2

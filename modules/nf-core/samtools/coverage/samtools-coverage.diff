@@ -1,0 +1,26 @@
+Changes in module 'nf-core/samtools/coverage'
+--- modules/nf-core/samtools/coverage/main.nf
++++ modules/nf-core/samtools/coverage/main.nf
+@@ -9,6 +9,7 @@
+ 
+     input:
+     tuple val(meta), path(input), path(input_index)
++    val region
+ 
+     output:
+     tuple val(meta), path("*.txt"), emit: coverage
+@@ -20,10 +21,12 @@
+     script:
+     def args   = task.ext.args   ?: ''
+     def prefix = task.ext.prefix ?: "${meta.id}"
++    def region_cmd = region          ? "-r ${region}" : ""
+     """
+     samtools \\
+         coverage \\
+         $args \\
++        ${region_cmd} \\
+         -o ${prefix}.txt \\
+         $input
+ 
+
+************************************************************

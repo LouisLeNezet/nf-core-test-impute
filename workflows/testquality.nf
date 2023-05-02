@@ -2,39 +2,96 @@
 
 nextflow.enable.dsl = 2
 
-include { VCF_IMPUTE_GLIMPSE  } from '../subworkflows/nf-core/vcf_impute_glimpse/main.nf'
-include { GLIMPSE_CONCORDANCE } from '../modules/nf-core/glimpse/concordance/main.nf'
+include { SAMPLE_CHECK             } from '../subworkflows/local/input_check.nf'
+include { REGION_CHECK             } from '../subworkflows/local/input_check.nf'
+include { DEPTH_CHECK              } from '../subworkflows/local/input_check.nf'
+include { PANEL_CHECK              } from '../subworkflows/local/input_check.nf'
+include { BAM_SIMULATE             } from '../subworkflows/local/bam_simulate.nf'
+include { GET_PANEL                } from '../subworkflows/local/get_panel.nf'
+include { COMPUTE_GL as GL_TRUTH   } from '../subworkflows/local/compute_gl.nf'
+include { COMPUTE_GL as GL_EMUL    } from '../subworkflows/local/compute_gl.nf'
+include { VCF_IMPUTE_GLIMPSE       } from '../subworkflows/nf-core/vcf_impute_glimpse/main.nf'
+include { MULTIPLE_IMPUTE_GLIMPSE2 } from '../subworkflows/nf-core/multiple_impute_glimpse2/main'
+include { GLIMPSE_CONCORDANCE      } from '../modules/nf-core/glimpse/concordance/main.nf'
+include { GUNZIP                   } from '../modules/nf-core/gunzip/main'
+include { ADD_COLUMNS              } from '../modules/local/add_columns.nf'
+include { CONCATENATE              } from '../modules/local/concatenate.nf'
 
 workflow TESTQUALITY {
-    input_vcf = Channel.of([
-        [ id:'input', single_end:false ], // meta map
-        file("/groups/dog/llenezet/test-datasets/data/ind/12559.chr38.1x.vcf.gz",
-            checkIfExists: true),
-        file("/groups/dog/llenezet/test-datasets/data/ind/12559.chr38.1x.vcf.gz.csi",
-            checkIfExists: true),
-        "38"
-    ])
-    ref_panel = Channel.of([
-        [ id:'reference', single_end:false ], // meta map
-        file("/groups/dog/llenezet/test-datasets/data/panel/DVDBC.chr38.bcf",
-            checkIfExists: true),
-        file("/groups/dog/llenezet/test-datasets/data/panel/DVDBC.chr38.bcf.csi",
-            checkIfExists: true)
-    ]).collect()
-    map = Channel.of([[]]).collect()
-    sample = Channel.of([[]]).collect()
-    VCF_IMPUTE_GLIMPSE ( input_vcf, ref_panel, [], sample )
+    SAMPLE_CHECK(params.input)
+    REGION_CHECK(params.region)
+    DEPTH_CHECK(params.depth)
+    PANEL_CHECK(params.panel)
 
-    allele_freq = [file("/groups/dog/llenezet/test-datasets/data/panel/DVDBC.chr38.sites.vcf.gz",checkIfExists:true),
-                   file("/groups/dog/llenezet/test-datasets/data/panel/DVDBC.chr38.sites.vcf.gz.csi",checkIfExists:true)]
-    
-    truth = [file("/groups/dog/llenezet/test-datasets/data/ind/12559.chr38.bcf",checkIfExists:true),
-            file("/groups/dog/llenezet/test-datasets/data/ind/12559.chr38.bcf.csi",checkIfExists:true)]
-    
-    list_inputs = Channel.of(["38", allele_freq[0], truth[0]])
-                    .combine(VCF_IMPUTE_GLIMPSE.out.merged_variants.map{it[1]}.collect().map{it[0]})
-                    .collect()
-    concordance_input=Channel.of([[ id:'input', single_end:false ]]).combine(list_inputs)
+    BAM_SIMULATE(
+        SAMPLE_CHECK.out.bam,
+        REGION_CHECK.out.region,
+        DEPTH_CHECK.out.depth
+    )
 
-    GLIMPSE_CONCORDANCE ( concordance_input, [], [], []) // meta, Region, Frequencies, Truth, Estimate, minPROB, minDP, bins
+    GET_PANEL(
+        PANEL_CHECK.out.panel,
+        REGION_CHECK.out.region,
+        "/groups/dog/llenezet/imputation/script/test_quality/wf_test/assets/chr_rename.txt"
+    )
+
+    GL_TRUTH(
+        BAM_SIMULATE.out.bam_region
+            .combine(BAM_SIMULATE.out.bam_region_index, by:0),
+        REGION_CHECK.out.region,
+        GET_PANEL.out.panel_sites,
+        GET_PANEL.out.panel_tsv
+    )
+
+    GL_EMUL(
+        BAM_SIMULATE.out.bam_emul
+            .combine(BAM_SIMULATE.out.bam_emul_index, by:0),
+        REGION_CHECK.out.region,
+        GET_PANEL.out.panel_sites,
+        GET_PANEL.out.panel_tsv
+    )
+
+    impute_input = GL_EMUL.out.vcf
+                    .combine(GL_EMUL.out.tbi, by:0)
+                    .combine(Channel.of([[]]))
+                    .map{meta, vcf, index, sample -> [meta, vcf, index, sample, meta.region]}
+
+    VCF_IMPUTE_GLIMPSE(impute_input,
+                        GET_PANEL.out.panel_phased
+                            .combine(GET_PANEL.out.panel_phased_index, by:0),
+                        Channel.of([[]]).collect())
+
+    MULTIPLE_IMPUTE_GLIMPSE2(impute_input,
+                        GET_PANEL.out.panel_phased
+                            .combine(GET_PANEL.out.panel_phased_index, by:0),
+                        Channel.of([[]]).collect(),
+                        Channel.of([[],[],[]]).collect(),
+                        "sequential")
+
+    glimpse1_vcf = VCF_IMPUTE_GLIMPSE.out.merged_variants
+                                    .map{meta, vcf -> [meta + ["soft":"glimpse1"], vcf]}
+
+    glimpse2_vcf = MULTIPLE_IMPUTE_GLIMPSE2.out.merged_variants
+                                    .map{meta, vcf -> [meta + ["soft":"glimpse2"], vcf]}
+
+    all_vcf = glimpse1_vcf.concat(glimpse2_vcf)
+
+    ch_concordance = all_vcf
+                    .map{metaIRRPDS, vcf -> [metaIRRPDS.subMap(["id","ref","region","panel"]), metaIRRPDS, vcf]}
+                    .combine(GL_TRUTH.out.vcf, by:0)
+                    .map{metaIRRP, metaIRRPDS, emul, truth -> [metaIRRPDS.subMap(["ref","region","panel"]), metaIRRPDS, emul, truth]}
+                    .combine(GET_PANEL.out.panel_sites.map{metaIpRRP, vcf ->
+                                [metaIpRRP.subMap(["ref","region","panel"]),metaIpRRP,vcf]},
+                            by:0)
+                    .map{metaIRRP,metaIRRPDS, emul, truth, metaIpRRP, freq ->
+                        [metaIRRPDS, metaIRRPDS.region, freq, truth, emul]}
+
+    GLIMPSE_CONCORDANCE ( ch_concordance, [], [], [])
+    GUNZIP(GLIMPSE_CONCORDANCE.out.errors_grp)
+    ADD_COLUMNS(GUNZIP.out.gunzip)
+
+    CONCATENATE(ADD_COLUMNS.out.txt
+                    .map{meta, txt -> [["id":"TestQuality"], txt]}
+                    .groupTuple()
+    )
 }

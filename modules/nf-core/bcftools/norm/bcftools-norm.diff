@@ -1,0 +1,15 @@
+Changes in module 'nf-core/bcftools/norm'
+--- modules/nf-core/bcftools/norm/main.nf
++++ modules/nf-core/bcftools/norm/main.nf
+@@ -8,8 +8,7 @@
+         'quay.io/biocontainers/bcftools:1.16--hfe4b78e_1' }"
+ 
+     input:
+-    tuple val(meta), path(vcf), path(tbi)
+-    path(fasta)
++    tuple val(meta), path(vcf), path(tbi), path(fasta)
+ 
+     output:
+     tuple val(meta), path("*.{vcf,vcf.gz,bcf,bcf.gz}")  , emit: vcf
+
+************************************************************

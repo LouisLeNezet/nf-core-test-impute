@@ -1,0 +1,35 @@
+Changes in module 'nf-core/bcftools/view'
+--- modules/nf-core/bcftools/view/main.nf
++++ modules/nf-core/bcftools/view/main.nf
+@@ -8,7 +8,7 @@
+         'quay.io/biocontainers/bcftools:1.16--hfe4b78e_1' }"
+ 
+     input:
+-    tuple val(meta), path(vcf), path(index)
++    tuple val(meta), path(vcf), path(index), val(region)
+     path(regions)
+     path(targets)
+     path(samples)
+@@ -23,15 +23,17 @@
+     script:
+     def args = task.ext.args ?: ''
+     def prefix = task.ext.prefix ?: "${meta.id}"
+-    def regions_file  = regions ? "--regions-file ${regions}" : ""
+-    def targets_file = targets ? "--targets-file ${targets}" : ""
+-    def samples_file =  samples ? "--samples-file ${samples}" : ""
++    def regions_file  = regions  ? "--regions-file ${regions}" : ""
++    def region_cmd    = region   ? "--regions ${region}"       : ""
++    def targets_file  = targets  ? "--targets-file ${targets}" : ""
++    def samples_file  =  samples ? "--samples-file ${samples}" : ""
+     """
+     bcftools view \\
+         --output ${prefix}.vcf.gz \\
+         ${regions_file} \\
+         ${targets_file} \\
+         ${samples_file} \\
++        ${region_cmd} \\
+         $args \\
+         --threads $task.cpus \\
+         ${vcf}
+
+************************************************************

@@ -1,0 +1,36 @@
+Changes in module 'nf-core/bcftools/mpileup'
+--- modules/nf-core/bcftools/mpileup/main.nf
++++ modules/nf-core/bcftools/mpileup/main.nf
+@@ -8,8 +8,7 @@
+         'quay.io/biocontainers/bcftools:1.16--hfe4b78e_1' }"
+ 
+     input:
+-    tuple val(meta), path(bam), path(intervals)
+-    path fasta
++    tuple val(meta), path(bam), path(fasta), path(intervals), path(targets)
+     val save_mpileup
+ 
+     output:
+@@ -30,6 +29,7 @@
+     def mpileup = save_mpileup ? "| tee ${prefix}.mpileup" : ""
+     def bgzip_mpileup = save_mpileup ? "bgzip ${prefix}.mpileup" : ""
+     def intervals = intervals ? "-T ${intervals}" : ""
++    def targets = targets ? "-T ${targets}" : ""
+     """
+     echo "${meta.id}" > sample_name.list
+ 
+@@ -40,7 +40,11 @@
+         $bam \\
+         $intervals \\
+         $mpileup \\
+-        | bcftools call --output-type v $args2 \\
++        | bcftools \\
++            call \\
++            --output-type v \\
++            $targets \\
++            $args2 \\
+         | bcftools reheader --samples sample_name.list \\
+         | bcftools view --output-file ${prefix}.vcf.gz --output-type z $args3
+ 
+
+************************************************************
