@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#SBATCH --job-name=impute_test_quality
-#SBATCH --chdir=/groups/dog/llenezet/imputation/script/test_quality/nf-core-testquality
+#SBATCH --job-name=simul
+#SBATCH --chdir=/groups/dog/llenezet/imputation/script/test_quality/wf_test
 #SBATCH --ntasks=1
-#SBATCH --mem=40G
+#SBATCH --mem=50G
 #SBATCH --cpus-per-task=8
 #SBATCH --constraint=avx2
 #SBATCH --mail-type=end          # send email when job ends
@@ -13,10 +13,18 @@
 source /local/miniconda3/etc/profile.d/conda.sh
 conda activate env_nf
 
-nohup nextflow \
+ls
+
+nextflow \
     run main.nf \
     -c nextflow.config \
-    --outdir ./data \
-    -work-dir ./work \
+    --input /groups/dog/llenezet/imputation/script/test_quality/wf_test/assets/samplesheet.csv \
+    --region /groups/dog/llenezet/imputation/script/test_quality/wf_test/assets/regionsheet.csv \
+    --depth /groups/dog/llenezet/imputation/script/test_quality/wf_test/assets/depthsheet.csv \
+    --panel /groups/dog/llenezet/imputation/script/test_quality/wf_test/assets/panelsheet.csv \
+    --outdir /scratch/llenezet/nf/data/simulation \
+    -work-dir /scratch/llenezet/nf/work \
+    --max-cpus 8 \
+    --max-memory '50.GB' \
     -profile singularity \
-    -resume &> nohupBQSR.out
+    -resume

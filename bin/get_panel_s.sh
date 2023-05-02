@@ -40,16 +40,17 @@ bcftools index -f ${PANEL_S}.sites.vcf.gz
 
 # Convert to TSV
 bcftools query -f'%CHROM\t%POS\t%REF,%ALT\n' ${PANEL_S}.sites.vcf.gz | bgzip -c > ${PANEL_S}.sites.tsv.gz
-tabix -s1 -b2 -e2 ${PANEL_S}.sites.tsv.gz
 
-# Get the chromosome reference genome
-awk -vRS=">" 'BEGIN{t["38"]=1}
-                {if($1 in t){printf ">%s",$0}}' /groups/dog/data/canFam3/sequence/canfam3.2_ordered_Tosso_285.fa > ./data/ref_gen.chr38.fa
+tabix -s1 -b2 -e2 ${PANEL_S}.sites.tsv.gz
 
 # Get phased haplotypes
 SHAPEIT5_phase_common -I ${PANEL_S}.bcf -O ${PANEL_S}.phased.bcf --region ${REGION} --threads 8
 
 bcftools index -f ${PANEL_S}.phased.bcf
+
+# Get the chromosome reference genome
+awk -vRS=">" 'BEGIN{t["38"]=1}
+                {if($1 in t){printf ">%s",$0}}' /groups/dog/data/canFam3/sequence/canfam3.2_ordered_Tosso_285.fa > ./data/ref_gen.chr38.fa
 
 # Select reference genome
 REF_GENOME=/groups/dog/data/canFam3/sequence/seq_by_chr/38.fa

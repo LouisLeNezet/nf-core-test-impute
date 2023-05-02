@@ -12,13 +12,13 @@
 
 ## Introduction
 
-<!-- TODO nf-core: Write a 1-2 sentence summary of what data the pipeline is for and what it does -->
+This pipeline is for testing the influence of different parameters (chunk size, reference, breed, software, ...) on the imputation accuracy.
 
 **nf-core/testquality** is a bioinformatics best-practice analysis pipeline for Test quality of imputation for dogs and humans with different parameters.
 
 The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. It uses Docker/Singularity containers making installation trivial and results highly reproducible. The [Nextflow DSL2](https://www.nextflow.io/docs/latest/dsl2.html) implementation of this pipeline uses one container per process which makes it much easier to maintain and update software dependencies. Where possible, these processes have been submitted to and installed from [nf-core/modules](https://github.com/nf-core/modules) in order to make them available to all nf-core pipelines, and to everyone within the Nextflow community!
 
-<!-- TODO nf-core: Add full-sized test dataset and amend the paragraph below if applicable -->
+The test dataset that could be used are those available on the [imputation branch of test-datasets](https://github.com/nf-core/test-datasets/tree/imputation)
 
 On release, automated continuous integration tests run the pipeline on a full-sized dataset on the AWS cloud infrastructure. This ensures that the pipeline runs on AWS, has sensible resource allocation defaults set to run on real-world datasets, and permits the persistent storage of results to benchmark between pipeline releases and other analysis sources.The results obtained from the full-sized test can be viewed on the [nf-core website](https://nf-co.re/testquality/results).
 
@@ -26,8 +26,8 @@ On release, automated continuous integration tests run the pipeline on a full-si
 
 <!-- TODO nf-core: Fill in short bullet-pointed list of the default steps in the pipeline -->
 
-1. Read QC ([`FastQC`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
-2. Present QC for raw reads ([`MultiQC`](http://multiqc.info/))
+1. Downsample to cX from BAM file
+
 
 ## Quick Start
 
@@ -53,7 +53,7 @@ On release, automated continuous integration tests run the pipeline on a full-si
    <!-- TODO nf-core: Update the example "typical command" below used to run the pipeline -->
 
    ```bash
-   nextflow run nf-core/testquality --input samplesheet.csv --outdir <OUTDIR> --genome GRCh37 -profile <docker/singularity/podman/shifter/charliecloud/conda/institute>
+   nextflow run nf-core/testquality --input samplesheet.csv --outdir <OUTDIR> -profile <docker/singularity/podman/shifter/charliecloud/conda/institute>
    ```
 
 ## Documentation
@@ -66,7 +66,7 @@ nf-core/testquality was originally written by LouisLeNezet.
 
 We thank the following people for their extensive assistance in the development of this pipeline:
 
-<!-- TODO nf-core: If applicable, make list of people who have also contributed -->
+  - "@LouisLeNezet"
 
 ## Contributions and Support
 
