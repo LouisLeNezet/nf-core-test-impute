@@ -13,7 +13,6 @@
 source /local/miniconda3/etc/profile.d/conda.sh
 conda activate env_nf
 
-ls
 
 nextflow \
     run main.nf \
