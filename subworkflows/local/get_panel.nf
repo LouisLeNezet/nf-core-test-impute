@@ -6,6 +6,7 @@ include { BCFTOOLS_INDEX as VCF_INDEX1           } from '../../modules/nf-core/b
 include { BCFTOOLS_INDEX as VCF_INDEX2           } from '../../modules/nf-core/bcftools/index/main.nf'
 include { BCFTOOLS_INDEX as VCF_INDEX3           } from '../../modules/nf-core/bcftools/index/main.nf'
 include { BCFTOOLS_INDEX as VCF_INDEX4           } from '../../modules/nf-core/bcftools/index/main.nf'
+include { BCFTOOLS_INDEX as VCF_INDEX5           } from '../../modules/nf-core/bcftools/index/main.nf'
 include { BCFTOOLS_NORM                          } from '../../modules/nf-core/bcftools/norm/main.nf'
 include { BCFTOOLS_QUERY                         } from '../../modules/nf-core/bcftools/query/main.nf'
 include { TABIX_BGZIP                            } from '../../modules/nf-core/tabix/bgzip/main'
@@ -38,13 +39,15 @@ workflow GET_PANEL {
     // Rename the chromosome without prefix
     BCFTOOLS_ANNOTATE(VIEW_VCF_REGION.out.vcf
                 .combine(VCF_INDEX1.out.csi, by:0)
-                .combine(Channel.of([[],[]])),
-                [],
+                .combine(Channel.of([[],[], []])),
                 file_chr_rename)
+    
+    VCF_INDEX2(BCFTOOLS_ANNOTATE.out.vcf)
+    ch_versions = ch_versions.mix(VCF_INDEX2.out.versions.first())
 
     // Normalise the panel
     ch_norm = BCFTOOLS_ANNOTATE.out.vcf
-                .combine(VCF_INDEX1.out.csi, by:0)
+                .combine(VCF_INDEX2.out.csi, by:0)
                 .map{metaIRR, vcf, index -> [metaIRR.subMap(["ref","region"]), metaIRR, vcf, index]}
                 .combine(ch_region, by:0)
                 .map{metaRR, metaIRR, vcf, index, fasta, region ->
@@ -53,27 +56,28 @@ workflow GET_PANEL {
     BCFTOOLS_NORM(ch_norm)
     ch_versions = ch_versions.mix(BCFTOOLS_NORM.out.versions.first())
 
+    // Extract only the SNP
     VIEW_VCF_SNPS(BCFTOOLS_NORM.out.vcf
                     .combine(Channel.of([[],[]])), [], [], [])
     ch_versions = ch_versions.mix(VIEW_VCF_SNPS.out.versions.first())
 
-    VCF_INDEX2(VIEW_VCF_SNPS.out.vcf)
-    ch_versions = ch_versions.mix(VCF_INDEX2.out.versions.first())
+    VCF_INDEX3(VIEW_VCF_SNPS.out.vcf)
+    ch_versions = ch_versions.mix(VCF_INDEX3.out.versions.first())
 
-    // Select only the SNPS
+
     vcf_region = VIEW_VCF_SNPS.out.vcf
-                    .combine(VCF_INDEX2.out.csi, by:0)
+                    .combine(VCF_INDEX3.out.csi, by:0)
     VIEW_VCF_SITES( vcf_region
                     .combine(Channel.of([[]])),
                     [], [], [])
     ch_versions = ch_versions.mix(VIEW_VCF_SITES.out.versions.first())
 
-    VCF_INDEX3(VIEW_VCF_SITES.out.vcf)
-    ch_versions = ch_versions.mix(VCF_INDEX3.out.versions.first())
+    VCF_INDEX4(VIEW_VCF_SITES.out.vcf)
+    ch_versions = ch_versions.mix(VCF_INDEX4.out.versions.first())
 
     // Convert to TSV
     BCFTOOLS_QUERY(VIEW_VCF_SITES.out.vcf
-                    .combine(VCF_INDEX3.out.csi, by:0),
+                    .combine(VCF_INDEX4.out.csi, by:0),
                     [], [], [])
     ch_versions = ch_versions.mix(BCFTOOLS_QUERY.out.versions.first())
 
