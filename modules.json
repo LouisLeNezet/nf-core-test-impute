@@ -32,6 +32,11 @@
                         "git_sha": "fa12afdf5874c1d11e4a20efe81c97935e8eea24",
                         "installed_by": ["modules"]
                     },
+                    "bcftools/sort": {
+                        "branch": "master",
+                        "git_sha": "fa12afdf5874c1d11e4a20efe81c97935e8eea24",
+                        "installed_by": ["modules"]
+                    },
                     "bcftools/view": {
                         "branch": "master",
                         "git_sha": "fa12afdf5874c1d11e4a20efe81c97935e8eea24",
@@ -46,6 +51,46 @@
                     "custom/dumpsoftwareversions": {
                         "branch": "master",
                         "git_sha": "76cc4938c1f6ea5c7d83fed1eeffc146787f9543",
+                        "installed_by": ["modules"]
+                    },
+                    "gatk4/applyvqsr": {
+                        "branch": "master",
+                        "git_sha": "643756685546fa61f5c8fba439af746c090b9180",
+                        "installed_by": ["modules"]
+                    },
+                    "gatk4/cnnscorevariants": {
+                        "branch": "master",
+                        "git_sha": "b9829e1064382745d8dff7f1d74d2138d2864f71",
+                        "installed_by": ["modules"]
+                    },
+                    "gatk4/filtervarianttranches": {
+                        "branch": "master",
+                        "git_sha": "643756685546fa61f5c8fba439af746c090b9180",
+                        "installed_by": ["modules"]
+                    },
+                    "gatk4/genomicsdbimport": {
+                        "branch": "master",
+                        "git_sha": "643756685546fa61f5c8fba439af746c090b9180",
+                        "installed_by": ["modules"]
+                    },
+                    "gatk4/genotypegvcfs": {
+                        "branch": "master",
+                        "git_sha": "643756685546fa61f5c8fba439af746c090b9180",
+                        "installed_by": ["modules"]
+                    },
+                    "gatk4/haplotypecaller": {
+                        "branch": "master",
+                        "git_sha": "643756685546fa61f5c8fba439af746c090b9180",
+                        "installed_by": ["modules"]
+                    },
+                    "gatk4/mergevcfs": {
+                        "branch": "master",
+                        "git_sha": "643756685546fa61f5c8fba439af746c090b9180",
+                        "installed_by": ["modules"]
+                    },
+                    "gatk4/variantrecalibrator": {
+                        "branch": "master",
+                        "git_sha": "643756685546fa61f5c8fba439af746c090b9180",
                         "installed_by": ["modules"]
                     },
                     "glimpse/chunk": {
