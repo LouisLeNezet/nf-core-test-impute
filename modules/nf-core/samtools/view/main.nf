@@ -8,10 +8,8 @@ process SAMTOOLS_VIEW {
         'quay.io/biocontainers/samtools:1.17--h00cdaf9_0' }"
 
     input:
-    tuple val(meta), path(input), path(index)
-    path fasta
+    tuple val(meta), path(input), path(index), path(fasta), val(region), val(depth)
     path qname
-    val region
 
     output:
     tuple val(meta), path("*.bam"),  emit: bam,     optional: true
@@ -32,6 +30,7 @@ process SAMTOOLS_VIEW {
     def reference  = fasta  ? "--reference ${fasta}" : ""
     def readnames  = qname  ? "--qname-file ${qname}": ""
     def region_cmd = region ? "-r ${region}"         : ""
+    def depth_cmd  = depth  ? "-s ${depth}"          : ""
     def file_type = args.contains("--output-fmt sam") ? "sam" :
                     args.contains("--output-fmt bam") ? "bam" :
                     args.contains("--output-fmt cram") ? "cram" :
@@ -45,6 +44,7 @@ process SAMTOOLS_VIEW {
         ${readnames} \\
         $args \\
         ${region_cmd} \\
+        ${depth_cmd} \\
         -o ${prefix}.${file_type} \\
         $input \\
         $args2

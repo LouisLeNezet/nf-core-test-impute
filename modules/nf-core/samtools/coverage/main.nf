@@ -8,8 +8,7 @@ process SAMTOOLS_COVERAGE {
         'quay.io/biocontainers/samtools:1.17--h00cdaf9_0' }"
 
     input:
-    tuple val(meta), path(input), path(input_index)
-    val region
+    tuple val(meta), path(input), path(input_index), val(region)
 
     output:
     tuple val(meta), path("*.txt"), emit: coverage
@@ -21,7 +20,7 @@ process SAMTOOLS_COVERAGE {
     script:
     def args   = task.ext.args   ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def region_cmd = region          ? "-r ${region}" : ""
+    def region_cmd = region      ? "-r ${region}" : ""
     """
     samtools \\
         coverage \\
