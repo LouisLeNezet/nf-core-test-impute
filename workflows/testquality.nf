@@ -2,20 +2,21 @@
 
 nextflow.enable.dsl = 2
 
-include { SAMPLE_CHECK             } from '../subworkflows/local/input_check.nf'
-include { REGION_CHECK             } from '../subworkflows/local/input_check.nf'
-include { DEPTH_CHECK              } from '../subworkflows/local/input_check.nf'
-include { PANEL_CHECK              } from '../subworkflows/local/input_check.nf'
-include { BAM_SIMULATE             } from '../subworkflows/local/bam_simulate.nf'
-include { GET_PANEL                } from '../subworkflows/local/get_panel.nf'
-include { COMPUTE_GL as GL_TRUTH   } from '../subworkflows/local/compute_gl.nf'
-include { COMPUTE_GL as GL_EMUL    } from '../subworkflows/local/compute_gl.nf'
-include { VCF_IMPUTE_GLIMPSE       } from '../subworkflows/nf-core/vcf_impute_glimpse/main.nf'
-include { MULTIPLE_IMPUTE_GLIMPSE2 } from '../subworkflows/nf-core/multiple_impute_glimpse2/main'
-include { GLIMPSE_CONCORDANCE      } from '../modules/nf-core/glimpse/concordance/main.nf'
-include { GUNZIP                   } from '../modules/nf-core/gunzip/main'
-include { ADD_COLUMNS              } from '../modules/local/add_columns.nf'
-include { CONCATENATE              } from '../modules/local/concatenate.nf'
+include { SAMPLE_CHECK                           } from '../subworkflows/local/input_check.nf'
+include { REGION_CHECK                           } from '../subworkflows/local/input_check.nf'
+include { DEPTH_CHECK                            } from '../subworkflows/local/input_check.nf'
+include { PANEL_CHECK                            } from '../subworkflows/local/input_check.nf'
+include { BAM_SIMULATE                           } from '../subworkflows/local/bam_simulate.nf'
+include { GET_PANEL                              } from '../subworkflows/local/get_panel.nf'
+include { COMPUTE_GL as GL_TRUTH                 } from '../subworkflows/local/compute_gl.nf'
+include { COMPUTE_GL as GL_EMUL                  } from '../subworkflows/local/compute_gl.nf'
+include { BAM_VARIANT_CALLING_HAPLOTYPECALLER    } from '../subworkflows/local/bam_variant_calling_haplotypecaller/main.nf'
+include { VCF_IMPUTE_GLIMPSE                     } from '../subworkflows/nf-core/vcf_impute_glimpse/main.nf'
+include { MULTIPLE_IMPUTE_GLIMPSE2               } from '../subworkflows/nf-core/multiple_impute_glimpse2/main'
+include { GLIMPSE_CONCORDANCE                    } from '../modules/nf-core/glimpse/concordance/main.nf'
+include { GUNZIP                                 } from '../modules/nf-core/gunzip/main'
+include { ADD_COLUMNS                            } from '../modules/local/add_columns.nf'
+include { CONCATENATE                            } from '../modules/local/concatenate.nf'
 
 workflow TESTQUALITY {
     SAMPLE_CHECK(params.input)
@@ -34,6 +35,22 @@ workflow TESTQUALITY {
         REGION_CHECK.out.region,
         "/groups/dog/llenezet/imputation/script/test_quality/wf_test/assets/chr_rename.txt"
     )
+
+    BAM_VARIANT_CALLING_HAPLOTYPECALLER(
+        BAM_SIMULATE.out.bam_region
+            .combine(BAM_SIMULATE.out.bam_region_index, by:0)
+            .combine(Channel.of([[]])),
+        Channel.empty(),Channel.empty(),Channel.empty(),
+        Channel.empty(),Channel.empty(),
+        Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),
+        Channel.empty()
+    )
+    /* [meta, cram, crai, interval.bed],
+    fasta, fai, dict,
+    dbsnp, dbsnp_tbi,
+    known_sites_indels, known_sites_indels_tbi, known_sites_snps, known_sites_snps_tbi
+    intervals_bed_combined
+    */
 
     GL_TRUTH(
         BAM_SIMULATE.out.bam_region
