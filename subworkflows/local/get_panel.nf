@@ -16,37 +16,37 @@ include { VCF_PHASE_SHAPEIT5                     } from '../../subworkflows/nf-c
 
 workflow GET_PANEL {
     take:
-    ch_vcf          // channel: [ [id, ref], vcf ]
+    ch_vcf          // channel: [ [id, ref], vcf, index ]
     ch_region       // channel: [ [ref, region], fasta, val(region)]
-    file_chr_rename // file
+    file_chr_rename // file rename
 
     main:
 
     ch_versions = Channel.empty()
 
+    // Rename the chromosome without prefix
+    BCFTOOLS_ANNOTATE(ch_vcf
+                .combine(Channel.of([[],[], []])),
+                file_chr_rename)
+    
+    VCF_INDEX1(BCFTOOLS_ANNOTATE.out.vcf)
+    ch_versions = ch_versions.mix(VCF_INDEX1.out.versions.first())
+
     // Filter the region of interest of the panel file
-    ch_input_region = ch_vcf
-                        .combine(ch_region)
-                        .map{ metaIR, vcf, index, metaRR, fasta, region ->
-                            [metaIR + metaRR, vcf, index, region+",chr"+region]}
+    ch_input_region = BCFTOOLS_ANNOTATE.out.vcf
+        .combine(VCF_INDEX1.out.csi, by:0)
+        .combine(ch_region)
+        .map{ metaIR, vcf, index, metaRR, fasta, region ->
+            [metaIR + metaRR, vcf, index, region]}
 
     VIEW_VCF_REGION(ch_input_region, [], [], [])
     ch_versions = ch_versions.mix(VIEW_VCF_REGION.out.versions.first())
 
-    VCF_INDEX1(VIEW_VCF_REGION.out.vcf)
-    ch_versions = ch_versions.mix(VCF_INDEX1.out.versions.first())
-
-    // Rename the chromosome without prefix
-    BCFTOOLS_ANNOTATE(VIEW_VCF_REGION.out.vcf
-                .combine(VCF_INDEX1.out.csi, by:0)
-                .combine(Channel.of([[],[], []])),
-                file_chr_rename)
-    
-    VCF_INDEX2(BCFTOOLS_ANNOTATE.out.vcf)
+    VCF_INDEX2(VIEW_VCF_REGION.out.vcf)
     ch_versions = ch_versions.mix(VCF_INDEX2.out.versions.first())
 
     // Normalise the panel
-    ch_norm = BCFTOOLS_ANNOTATE.out.vcf
+    ch_norm = VIEW_VCF_REGION.out.vcf
                 .combine(VCF_INDEX2.out.csi, by:0)
                 .map{metaIRR, vcf, index -> [metaIRR.subMap(["ref","region"]), metaIRR, vcf, index]}
                 .combine(ch_region, by:0)
@@ -88,23 +88,22 @@ workflow GET_PANEL {
     ch_versions = ch_versions.mix(TABIX_TABIX.out.versions.first())
 
     // Phase panel
-    vcf_region.view()
-    VCF_PHASE_SHAPEIT5(vcf_region
-                        .map { meta, vcf, csi -> [meta, vcf, csi, [], meta.region] },
-                Channel.of([[],[],[]]).collect(),
-                Channel.of([[],[],[]]).collect(),
-                Channel.of([[],[]]).collect())
-    ch_versions = ch_versions.mix(VCF_PHASE_SHAPEIT5.out.versions.first())
+    //VCF_PHASE_SHAPEIT5(vcf_region
+    //                    .map { meta, vcf, csi -> [meta, vcf, csi, [], meta.region] },
+    //            Channel.of([[],[],[]]).collect(),
+    //            Channel.of([[],[],[]]).collect(),
+    //            Channel.of([[],[]]).collect())
+    //ch_versions = ch_versions.mix(VCF_PHASE_SHAPEIT5.out.versions.first())
 
     emit:
     panel_norm          = VIEW_VCF_SNPS.out.vcf
-    panel_norm_index    = VCF_INDEX2.out.csi
+    panel_norm_index    = VCF_INDEX3.out.csi
     panel_sites         = VIEW_VCF_SITES.out.vcf
-    panel_sites_index   = VCF_INDEX3.out.csi
+    panel_sites_index   = VCF_INDEX4.out.csi
     panel_tsv           = TABIX_BGZIP.out.output
     panel_tsv_index     = TABIX_TABIX.out.tbi
-    panel_phased        = VCF_PHASE_SHAPEIT5.out.variants_phased
-    panel_phased_index  = VCF_PHASE_SHAPEIT5.out.variants_index
+    panel_phased        = VIEW_VCF_SNPS.out.vcf
+    panel_phased_index  = VCF_INDEX3.out.csi
 
     versions            = ch_versions      // channel: [ versions.yml ]
 }
