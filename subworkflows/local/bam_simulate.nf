@@ -1,3 +1,4 @@
+include { SAMTOOLS_REHEADER            } from '../../modules/nf-core/samtools/reheader/main.nf'
 include { SAMTOOLS_COVERAGE            } from '../../modules/nf-core/samtools/coverage/main.nf'
 include { SAMTOOLS_INDEX as INDEX1     } from '../../modules/nf-core/samtools/index/main.nf'
 include { SAMTOOLS_INDEX as INDEX2     } from '../../modules/nf-core/samtools/index/main.nf'
@@ -7,9 +8,9 @@ include { SAMTOOLS_VIEW as VIEW_DEPTH  } from '../../modules/nf-core/samtools/vi
 workflow BAM_SIMULATE {
 
     take:
-    ch_bam   // channel: [ [id, ref], bam, bai ]
-    ch_region// channel: [ [ref, region], fasta, val(region)]
-    ch_depth // channel: val(depth)
+    ch_bam     // channel: [ [id, ref], bam, bai ]
+    ch_region  // channel: [ [ref, region], fasta, val(region)]
+    ch_depth   // channel: val(depth)
 
     main:
 
@@ -23,6 +24,8 @@ workflow BAM_SIMULATE {
 
     VIEW_REGION(ch_input_region, [])
     ch_versions = ch_versions.mix(VIEW_REGION.out.versions.first())
+
+    //SAMTOOLS_REHEADER(VIEW_REGION.out.bam)
 
     INDEX1 (VIEW_REGION.out.bam)
     ch_versions = ch_versions.mix(INDEX1.out.versions.first())
@@ -40,7 +43,7 @@ workflow BAM_SIMULATE {
 
     ch_depth_factor = ch_mean_depth
                         .combine(ch_depth)
-                        .map{metaIRR, mean, depth -> [metaIRR, metaIRR + ["depth":depth], depth as Float / mean + 1]}
+                        .map{metaIRR, mean, depth -> [metaIRR, metaIRR + ["depth":depth], depth as Float / mean]}
 
     ch_input_downsample = ch_coverage
                             .map{ metaIRR, bam, index, region ->
