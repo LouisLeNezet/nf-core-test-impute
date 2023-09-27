@@ -36,6 +36,7 @@ process BCFTOOLS_ANNOTATE {
         $args \\
         $annotations_file \\
         $header_file \\
+        $rename_chr_cmd \\
         --output ${prefix}.${extension} \\
         --threads $task.cpus \\
         $input
