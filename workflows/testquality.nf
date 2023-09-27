@@ -10,7 +10,6 @@ include { BAM_SIMULATE                           } from '../subworkflows/local/b
 include { GET_PANEL                              } from '../subworkflows/local/get_panel.nf'
 include { COMPUTE_GL as GL_TRUTH                 } from '../subworkflows/local/compute_gl.nf'
 include { COMPUTE_GL as GL_EMUL                  } from '../subworkflows/local/compute_gl.nf'
-include { BAM_VARIANT_CALLING_HAPLOTYPECALLER    } from '../subworkflows/local/bam_variant_calling_haplotypecaller/main.nf'
 include { VCF_IMPUTE_GLIMPSE                     } from '../subworkflows/nf-core/vcf_impute_glimpse/main.nf'
 include { MULTIPLE_IMPUTE_GLIMPSE2               } from '../subworkflows/nf-core/multiple_impute_glimpse2/main'
 include { GLIMPSE_CONCORDANCE                    } from '../modules/nf-core/glimpse/concordance/main.nf'
@@ -33,24 +32,8 @@ workflow TESTQUALITY {
     GET_PANEL(
         PANEL_CHECK.out.panel,
         REGION_CHECK.out.region,
-        "/groups/dog/llenezet/imputation/script/test_quality/wf_test/assets/chr_rename.txt"
+        params.chr_rename
     )
-
-    BAM_VARIANT_CALLING_HAPLOTYPECALLER(
-        BAM_SIMULATE.out.bam_region
-            .combine(BAM_SIMULATE.out.bam_region_index, by:0)
-            .combine(Channel.of([[]])),
-        Channel.empty(),Channel.empty(),Channel.empty(),
-        Channel.empty(),Channel.empty(),
-        Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),
-        Channel.empty()
-    )
-    /* [meta, cram, crai, interval.bed],
-    fasta, fai, dict,
-    dbsnp, dbsnp_tbi,
-    known_sites_indels, known_sites_indels_tbi, known_sites_snps, known_sites_snps_tbi
-    intervals_bed_combined
-    */
 
     GL_TRUTH(
         BAM_SIMULATE.out.bam_region
@@ -76,24 +59,24 @@ workflow TESTQUALITY {
     VCF_IMPUTE_GLIMPSE(impute_input,
                         GET_PANEL.out.panel_phased
                             .combine(GET_PANEL.out.panel_phased_index, by:0),
-                        Channel.of([[]]).collect())
+                        Channel.of([["map": "map1"], params.map]).collect())
 
-    MULTIPLE_IMPUTE_GLIMPSE2(impute_input,
-                        GET_PANEL.out.panel_phased
-                            .combine(GET_PANEL.out.panel_phased_index, by:0),
-                        Channel.of([[]]).collect(),
-                        Channel.of([[],[],[]]).collect(),
-                        "sequential")
+    //MULTIPLE_IMPUTE_GLIMPSE2(impute_input,
+    //                    GET_PANEL.out.panel_phased
+    //                        .combine(GET_PANEL.out.panel_phased_index, by:0),
+    //                    Channel.of([[]]).collect(),
+    //                    Channel.of([[],[],[]]).collect(),
+    //                    "sequential")
 
     glimpse1_vcf = VCF_IMPUTE_GLIMPSE.out.merged_variants
                                     .map{meta, vcf -> [meta + ["soft":"glimpse1"], vcf]}
 
-    glimpse2_vcf = MULTIPLE_IMPUTE_GLIMPSE2.out.merged_variants
-                                    .map{meta, vcf -> [meta + ["soft":"glimpse2"], vcf]}
+    //glimpse2_vcf = MULTIPLE_IMPUTE_GLIMPSE2.out.merged_variants
+    //                                .map{meta, vcf -> [meta + ["soft":"glimpse2"], vcf]}
 
-    all_vcf = glimpse1_vcf.concat(glimpse2_vcf)
+    //all_vcf = glimpse1_vcf.concat(glimpse2_vcf)
 
-    ch_concordance = all_vcf
+    ch_concordance = glimpse1_vcf
                     .map{metaIRRPDS, vcf -> [metaIRRPDS.subMap(["id","ref","region","panel"]), metaIRRPDS, vcf]}
                     .combine(GL_TRUTH.out.vcf, by:0)
                     .map{metaIRRP, metaIRRPDS, emul, truth -> [metaIRRPDS.subMap(["ref","region","panel"]), metaIRRPDS, emul, truth]}
