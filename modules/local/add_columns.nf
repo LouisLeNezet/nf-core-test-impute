@@ -14,13 +14,15 @@ process ADD_COLUMNS {
     script:
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    awk '(NR>=2) && (NR<=10)' $input | \\
-    awk 'NR==1{\$(NF+1)="ID"} NR>1{\$(NF+1)="${meta.id}"}1' | \\
-    awk 'NR==1{\$(NF+1)="Region"} NR>1{\$(NF+1)="${meta.region}"}1' | \\
-    awk 'NR==1{\$(NF+1)="Depth"} NR>1{\$(NF+1)="${meta.depth}"}1' | \\
-    awk 'NR==1{\$(NF+1)="Panel"} NR>1{\$(NF+1)="${meta.panel}"}1' > \\
-    ${prefix}.txt 
-
+    awk 'NR==2{
+        print \$0, "best_gt_rsquared", "imputed_ds_rsquared", "ID", "Region", "Depth", "Panel"
+    } NR>2 && NR<=10 {
+        \$(NF+1)="${meta.id}"
+        \$(NF+1)="${meta.region}"
+        \$(NF+1)="${meta.depth}"
+        \$(NF+1)="${meta.panel}"
+        print
+    }' $input > ${prefix}.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
