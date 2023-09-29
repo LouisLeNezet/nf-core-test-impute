@@ -69,22 +69,26 @@ workflow TESTQUALITY {
     //                    "sequential")
 
     glimpse1_vcf = VCF_IMPUTE_GLIMPSE.out.merged_variants
-                                    .map{meta, vcf -> [meta + ["soft":"glimpse1"], vcf]}
+        .combine(VCF_IMPUTE_GLIMPSE.out.merged_variants_index, by: 0)
+        .map{meta, vcf, index -> [meta + ["soft":"glimpse1"], vcf, index]}
 
     //glimpse2_vcf = MULTIPLE_IMPUTE_GLIMPSE2.out.merged_variants
     //                                .map{meta, vcf -> [meta + ["soft":"glimpse2"], vcf]}
 
     //all_vcf = glimpse1_vcf.concat(glimpse2_vcf)
 
+    ch_allele_freq = Channel.fromPath(params.allele_freq)
+        .combine(Channel.fromPath(params.allele_freq_index))
+
     ch_concordance = glimpse1_vcf
-                    .map{metaIRRPDS, vcf -> [metaIRRPDS.subMap(["id","ref","region","panel"]), metaIRRPDS, vcf]}
+                    .map{metaIRRPDS, vcf, index -> [metaIRRPDS.subMap(["id","ref","region","panel"]), metaIRRPDS, vcf, index]}
                     .combine(GL_TRUTH.out.vcf, by:0)
-                    .map{metaIRRP, metaIRRPDS, emul, truth -> [metaIRRPDS.subMap(["ref","region","panel"]), metaIRRPDS, emul, truth]}
-                    .combine(GET_PANEL.out.panel_sites.map{metaIpRRP, vcf ->
-                                [metaIpRRP.subMap(["ref","region","panel"]),metaIpRRP,vcf]},
-                            by:0)
-                    .map{metaIRRP,metaIRRPDS, emul, truth, metaIpRRP, freq ->
-                        [metaIRRPDS, metaIRRPDS.region, freq, truth, emul]}
+                    .combine(GL_TRUTH.out.tbi, by:0)
+                    .map{metaIRRP, metaIRRPDS, emul, emul_index, truth, truth_index ->
+                        [metaIRRPDS.subMap(["ref","region","panel"]), metaIRRPDS, emul, emul_index, truth, truth_index ]}
+                    .combine( ch_allele_freq )
+                    .map{metaIRRP,metaIRRPDS, emul, emul_index, truth, truth_index, freq, freq_index ->
+                        [metaIRRPDS, metaIRRPDS.region, freq, freq_index, truth, truth_index, emul, emul_index]}
 
     GLIMPSE_CONCORDANCE ( ch_concordance, [], [], [])
     GUNZIP(GLIMPSE_CONCORDANCE.out.errors_grp)

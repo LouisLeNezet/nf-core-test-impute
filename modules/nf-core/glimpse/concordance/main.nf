@@ -8,7 +8,7 @@ process GLIMPSE_CONCORDANCE {
         'quay.io/biocontainers/glimpse-bio:1.1.1--hce55b13_1' }"
 
     input:
-    tuple val(meta), val(region), path(freq), path(truth), path(estimate)
+    tuple val(meta), val(region), path(freq), path(freq_index), path(truth), path(truth_index), path(estimate), path(estimate_index)
     val(min_prob)
     val(min_dp)
     val(bins)
